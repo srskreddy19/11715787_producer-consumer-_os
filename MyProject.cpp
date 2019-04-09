@@ -3,85 +3,86 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include<pthread.h>
 typedef struct
 {
-    int buf[5];   
-    int in;              
-    int out;              
+    int buffer[5];   
+    int inner;              
+    int outter;              
     sem_t full;           
     sem_t empty;          
     
     pthread_mutex_t mutex;          
-} sbuf_t;
+} sbuffer_v;
 
-sbuf_t shared;
+sbuffer_v shared;
 
 int* arg;
-void *Producer(void *arg)
+void *Prod(void *arg)
 {
-    int i, item, index;
+    int k, item1, index1;
     
 
-    index = *((int *)arg);
+    index1 = *((int *)arg);
     
 
     
 
-    for (i=0; i < 4; i++)
+    for (k=0; k < 4; k++)
     {
         
-        item = i;
+        item1 = k;
         
         sem_wait(&shared.empty);
         pthread_mutex_lock(&shared.mutex);
-        shared.buf[shared.in] = item;
-        shared.in = (shared.in+1)%5;
-        printf("[P%d] Producing %d ...\n", index, item);
+        shared.buffer[shared.inner] = item1;
+        shared.inner = (shared.inner+1)%20;
+        printf(" Producing %d ...\n", index1, item1);
         fflush(stdout);
         pthread_mutex_unlock(&shared.mutex);
         sem_post(&shared.full);
-        if (i % 2 == 1) sleep(1);
+        if (k % 2 == 1) sleep(1);
     }
     return NULL;
 }
 
-void *Consumer(void *arg)
+void *Consu(void *arg)
 {
-    int i, item, index;
+    int k, item2, index2;
     
 
-    index = *((int *)arg);
-    for (i=4; i > 0; i--) {
+    index2 = *((int *)arg);
+    for (k=4; k > 0; k--) {
         sem_wait(&shared.full);
         pthread_mutex_lock(&shared.mutex);
-        item=i;
-        item=shared.buf[shared.out];
-        shared.out = (shared.out+1)%5;
-        printf("[C%d] Consuming  %d ...\n", index, item);
+        item2=k;
+        item2=shared.buffer[shared.outter];
+        shared.outter= (shared.outter+1)%20;
+        printf("Consuming  %d ...\n", index2, item2);
         fflush(stdout);
         pthread_mutex_unlock(&shared.mutex);
         sem_post(&shared.empty);
-        if (i % 2 == 1) sleep(1);
+        if (k % 2 == 1) sleep(1);
     }
     return NULL;
 }
 
 int main()
 {
-    pthread_t idP, idC;
-    int index;
+    pthread_t idProd, idConsu;
+    int indexZ;
     
 
     sem_init(&shared.full, 0, 0);
     sem_init(&shared.empty, 0, 5);
     pthread_mutex_init(&shared.mutex, NULL);
-    for (index = 0; index < 3; index++)
+    for (indexZ = 0; indexZ < 3; indexZ++)
     {
-        pthread_create(&idP, NULL, Producer, &index);
+        pthread_create(&idProd, NULL, Prod, &indexZ);
     }
-    for(index=0; index<3; index++)
+    for(indexZ=0; indexZ<3; indexZ++)
     {
-        pthread_create(&idC, NULL, Consumer, &index);
+        pthread_create(&idConsu, NULL,Consu,&indexZ);
     }
     pthread_exit(NULL);
 }
